@@ -54,7 +54,7 @@ A powerful visual chat flow builder built with Next.js and React Flow. Create in
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/prajjwaljaiswal/chatbot-flow-builder.git
    cd chat-builder
    ```
 
