@@ -1,11 +1,9 @@
-import { Handle, NodeProps, Position } from "@xyflow/react";
+import { Handle, Position } from "@xyflow/react";
 import { MessageSquareIcon } from "lucide-react";
-import { useCallback } from "react";
+import { useBuilder } from "@/context/builderContext";
 
-export default function MessageNode(props: NodeProps) {
-  const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(evt.target.value);
-  }, []);
+export default function MessageNode(props: { id: string }) {
+  const { handleDoubleClick, isEditing } = useBuilder();
 
   return (
     <>
@@ -16,7 +14,14 @@ export default function MessageNode(props: NodeProps) {
         onConnect={(params) => console.log("handle onConnect", params)}
         isConnectable={true}
       />
-      <div className="flex  w-[200px] min-h-[40px] flex-col  gap-2 bg-white border border-gray-900">
+      <div
+        className={`flex w-[200px] min-h-[40px] flex-col  gap-2 bg-white border ${
+          isEditing.id === props.id && isEditing.isEditing
+            ? "border-blue-500"
+            : "border-gray-900"
+        }`}
+        onDoubleClick={() => handleDoubleClick(props.id)}
+      >
         <div className="flex items-center gap-2 bg-blue-300 p-1">
           <MessageSquareIcon className="w-4 h-4" />
           <p className="text-sm font-medium">Send Message</p>

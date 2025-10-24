@@ -17,6 +17,18 @@ type BuilderContextType = {
   nodes: Node[];
   setNodes: (nodes: Node[]) => void;
   edges: Edge[];
+  isEditing: {
+    id: string;
+    isEditing: boolean;
+    messageContent: string;
+  };
+  setIsEditing: (isEditing: {
+    id: string;
+    isEditing: boolean;
+    messageContent: string;
+  }) => void;
+  messageContent: string;
+  setMessageContent: (messageContent: string) => void;
   setEdges: (edges: Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -31,6 +43,8 @@ type BuilderContextType = {
     nodeType: string
   ) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
+  handleDoubleClick: (id: string) => void;
+  handleBack: () => void;
 };
 
 const initialNodes: Node[] = [
@@ -65,6 +79,16 @@ const BuilderContext = createContext<BuilderContextType>({
   onDrop: () => {},
   onDragStart: () => {},
   onDragOver: () => {},
+  isEditing: {
+    id: "",
+    isEditing: false,
+    messageContent: "",
+  },
+  setIsEditing: () => {},
+  messageContent: "",
+  setMessageContent: () => {},
+  handleDoubleClick: (id: string) => {},
+  handleBack: () => {},
 });
 
 export const BuilderProvider = ({
@@ -75,6 +99,13 @@ export const BuilderProvider = ({
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [type, setType] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState({
+    id: "",
+    isEditing: false,
+    messageContent: "",
+  });
+  const [messageContent, setMessageContent] = useState("");
+
   const { screenToFlowPosition } = useReactFlow();
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -94,6 +125,14 @@ export const BuilderProvider = ({
     (params) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
     [setEdges]
   );
+
+  const handleDoubleClick = (id: string) => {
+    setIsEditing({
+      id: id,
+      isEditing: isEditing.id === id ? !isEditing.isEditing : true,
+      messageContent: "",
+    });
+  };
 
   const onDragStart = (
     event: React.DragEvent<HTMLDivElement>,
@@ -159,6 +198,14 @@ export const BuilderProvider = ({
     [type, screenToFlowPosition]
   );
 
+  const handleBack = () => {
+    setIsEditing({
+      id: isEditing.id,
+      isEditing: false,
+      messageContent: isEditing.messageContent,
+    });
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -173,6 +220,12 @@ export const BuilderProvider = ({
         onDrop,
         onDragStart,
         onDragOver,
+        isEditing,
+        setIsEditing,
+        messageContent,
+        setMessageContent,
+        handleDoubleClick,
+        handleBack,
       }}
     >
       {children}

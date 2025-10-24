@@ -3,7 +3,6 @@ import Builder from "@/layout/Builder";
 import Header from "@/components/Header";
 import { BuilderProvider } from "@/context/builderContext";
 import { ReactFlowProvider } from "@xyflow/react";
-import SettingPanel from "@/components/SettingPanel";
 
 export default function Home() {
   return (
@@ -12,7 +11,6 @@ export default function Home() {
         <Header />
         <div className="flex flex-row h-screen w-full">
           <Builder />
-          <SettingPanel />
           {/* <NodesPanel /> */}
         </div>
       </BuilderProvider>
