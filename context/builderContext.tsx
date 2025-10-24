@@ -9,6 +9,7 @@ import {
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
+  useReactFlow,
 } from "@xyflow/react";
 import { createContext, useCallback, useContext, useState } from "react";
 
@@ -20,6 +21,16 @@ type BuilderContextType = {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
+  handleDragStart: (
+    event: React.DragEvent<HTMLDivElement>,
+    type: string
+  ) => void;
+  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDragStart: (
+    event: React.DragEvent<HTMLDivElement>,
+    nodeType: string
+  ) => void;
+  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
 };
 
 const initialNodes: Node[] = [
@@ -50,6 +61,10 @@ const BuilderContext = createContext<BuilderContextType>({
   onNodesChange: () => {},
   onEdgesChange: () => {},
   onConnect: () => {},
+  handleDragStart: () => {},
+  onDrop: () => {},
+  onDragStart: () => {},
+  onDragOver: () => {},
 });
 
 export const BuilderProvider = ({
@@ -59,6 +74,8 @@ export const BuilderProvider = ({
 }) => {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [type, setType] = useState<string | null>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => {
@@ -78,6 +95,70 @@ export const BuilderProvider = ({
     [setEdges]
   );
 
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    nodeType: string
+  ) => {
+    setType(nodeType);
+    event.dataTransfer.setData(
+      "application/json",
+      JSON.stringify({
+        type: nodeType,
+        position: { x: 0, y: 0 },
+        data: { label: "Message" },
+      })
+    );
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const handleDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    type: string
+  ) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData(
+      "application/json",
+      JSON.stringify({
+        type: type,
+        position: { x: 0, y: 0 },
+        data: { label: "Message" },
+      })
+    );
+    setType(type);
+  };
+
+  const onDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.preventDefault();
+
+      // check if the dropped element is valid
+      console.log("onDrop", type);
+      if (!type) {
+        return;
+      }
+
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      const newNode = {
+        id: crypto.randomUUID(),
+        type,
+        position,
+        data: { label: `${type} node` },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [type, screenToFlowPosition]
+  );
+
   return (
     <BuilderContext.Provider
       value={{
@@ -88,6 +169,10 @@ export const BuilderProvider = ({
         onNodesChange,
         onEdgesChange,
         onConnect,
+        handleDragStart,
+        onDrop,
+        onDragStart,
+        onDragOver,
       }}
     >
       {children}

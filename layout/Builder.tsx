@@ -11,8 +11,16 @@ import {
 import "@xyflow/react/dist/style.css";
 
 export default function Builder() {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect } =
-    useBuilder();
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onDrop,
+    onDragStart,
+    onDragOver,
+  } = useBuilder();
 
   const nodeTypes = {
     messageNode: MessageNode,
@@ -27,6 +35,9 @@ export default function Builder() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragStart={(event) => onDragStart(event, "messageNode")}
         fitView
       >
         <Controls />
