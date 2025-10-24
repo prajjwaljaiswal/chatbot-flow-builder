@@ -2,7 +2,10 @@ import { Handle, Position } from "@xyflow/react";
 import { MessageSquareIcon } from "lucide-react";
 import { useBuilder } from "@/context/builderContext";
 
-export default function MessageNode(props: { id: string }) {
+export default function MessageNode(props: {
+  id: string;
+  data: { messageContent: string };
+}) {
   const { handleDoubleClick, isEditing } = useBuilder();
 
   return (
@@ -20,14 +23,22 @@ export default function MessageNode(props: { id: string }) {
             ? "border-blue-500"
             : "border-gray-900"
         }`}
-        onDoubleClick={() => handleDoubleClick(props.id)}
+        onDoubleClick={(event: React.MouseEvent<HTMLDivElement>) =>
+          handleDoubleClick(
+            props.id,
+            (event.target as HTMLDivElement).textContent || ""
+          )
+        }
       >
-        <div className="flex items-center gap-2 bg-blue-300 p-1">
+        <div
+          className="flex items-center gap-2 bg-blue-300 p-1"
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
           <MessageSquareIcon className="w-4 h-4" />
           <p className="text-sm font-medium">Send Message</p>
         </div>
         <div className="flex flex-col">
-          <span className="px-2 text-sm">Message Content</span>
+          <span className="px-2 text-sm">{props.data.messageContent}</span>
         </div>
       </div>
       <Handle

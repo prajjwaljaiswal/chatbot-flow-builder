@@ -43,8 +43,9 @@ type BuilderContextType = {
     nodeType: string
   ) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  handleDoubleClick: (id: string) => void;
+  handleDoubleClick: (id: string, messageContent: string) => void;
   handleBack: () => void;
+  handleMessageContentChange: (id: string, messageContent: string) => void;
 };
 
 const initialNodes: Node[] = [
@@ -52,13 +53,13 @@ const initialNodes: Node[] = [
     id: "n1",
     type: "messageNode",
     position: { x: 0, y: 0 },
-    data: { label: "Node 1" },
+    data: { label: "Node 1", messageContent: "Hello, how are you?" },
   },
   {
     id: "n2",
     type: "messageNode",
     position: { x: 0, y: 100 },
-    data: { label: "Node 2" },
+    data: { label: "Node 2", messageContent: "I'm fine, thank you!" },
   },
 ];
 
@@ -87,8 +88,9 @@ const BuilderContext = createContext<BuilderContextType>({
   setIsEditing: () => {},
   messageContent: "",
   setMessageContent: () => {},
-  handleDoubleClick: (id: string) => {},
+  handleDoubleClick: () => {},
   handleBack: () => {},
+  handleMessageContentChange: () => {},
 });
 
 export const BuilderProvider = ({
@@ -126,11 +128,11 @@ export const BuilderProvider = ({
     [setEdges]
   );
 
-  const handleDoubleClick = (id: string) => {
+  const handleDoubleClick = (id: string, messageContent: string) => {
     setIsEditing({
       id: id,
       isEditing: isEditing.id === id ? !isEditing.isEditing : true,
-      messageContent: "",
+      messageContent: messageContent,
     });
   };
 
@@ -190,7 +192,7 @@ export const BuilderProvider = ({
         id: crypto.randomUUID(),
         type,
         position,
-        data: { label: `${type} node` },
+        data: { label: `${type} node`, messageContent: "" },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -204,6 +206,26 @@ export const BuilderProvider = ({
       isEditing: false,
       messageContent: isEditing.messageContent,
     });
+  };
+
+  const handleMessageContentChange = (id: string, messageContent: string) => {
+    if (nodes.find((node) => node.id === id)) {
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.id === id
+            ? {
+                ...node,
+                data: { ...node.data, messageContent: messageContent },
+              }
+            : node
+        )
+      );
+      setIsEditing({
+        id: id,
+        isEditing: true,
+        messageContent: messageContent,
+      });
+    }
   };
 
   return (
@@ -226,6 +248,7 @@ export const BuilderProvider = ({
         setMessageContent,
         handleDoubleClick,
         handleBack,
+        handleMessageContentChange,
       }}
     >
       {children}
