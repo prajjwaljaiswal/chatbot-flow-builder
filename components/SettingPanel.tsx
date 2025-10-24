@@ -3,9 +3,19 @@
 import { MoveLeftIcon } from "lucide-react";
 import { useBuilder } from "@/context/builderContext";
 import { Field, Form, Formik } from "formik";
+import { useRef, useEffect } from "react";
 
 export default function SettingPanel() {
-  const { handleBack, isEditing, handleMessageContentChange } = useBuilder();
+  const { handleBack, isEditing, handleMessageContentChange, focusTextarea } =
+    useBuilder();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (focusTextarea && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [focusTextarea]);
+
   return (
     <div className="w-1/4 h-full p-4 border-l border-gray-200">
       <div className="flex items-center gap-2 mb-4">
@@ -31,6 +41,7 @@ export default function SettingPanel() {
                 <Field
                   name={`${isEditing.id}-messageContent`}
                   as="textarea"
+                  innerRef={textareaRef}
                   placeholder="Enter your message"
                   className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={5}

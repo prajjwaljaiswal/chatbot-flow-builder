@@ -12,6 +12,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { createContext, useCallback, useContext, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
 type BuilderContextType = {
   nodes: Node[];
@@ -46,6 +47,24 @@ type BuilderContextType = {
   handleDoubleClick: (id: string, messageContent: string) => void;
   handleBack: () => void;
   handleMessageContentChange: (id: string, messageContent: string) => void;
+  handleSaveNodeChanges: () => void;
+  confirmSaveNodeChanges: () => void;
+  focusTextarea: boolean;
+  setFocusTextarea: (focus: boolean) => void;
+  handleDeleteNode: (id: string) => void;
+  confirmDeleteNode: (id: string) => void;
+  confirmationModal: {
+    show: boolean;
+    nodeId: string | null;
+    message: string;
+    type: "delete" | "save";
+  };
+  setConfirmationModal: (modal: {
+    show: boolean;
+    nodeId: string | null;
+    message: string;
+    type: "delete" | "save";
+  }) => void;
 };
 
 const initialNodes: Node[] = [
@@ -91,6 +110,19 @@ const BuilderContext = createContext<BuilderContextType>({
   handleDoubleClick: () => {},
   handleBack: () => {},
   handleMessageContentChange: () => {},
+  handleSaveNodeChanges: () => {},
+  confirmSaveNodeChanges: () => {},
+  focusTextarea: false,
+  setFocusTextarea: () => {},
+  handleDeleteNode: () => {},
+  confirmDeleteNode: () => {},
+  confirmationModal: {
+    show: false,
+    nodeId: null,
+    message: "",
+    type: "delete",
+  },
+  setConfirmationModal: () => {},
 });
 
 export const BuilderProvider = ({
@@ -98,8 +130,21 @@ export const BuilderProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [nodes, setNodes] = useState<Node[]>(() => {
+    if (typeof window !== "undefined") {
+      const nodes = JSON.parse(localStorage.getItem("nodes") || "[]");
+      return nodes.length > 0 ? nodes : initialNodes;
+    }
+    return initialNodes;
+  });
+  const [edges, setEdges] = useState<Edge[]>(() => {
+    if (typeof window !== "undefined") {
+      const edges = JSON.parse(localStorage.getItem("edges") || "[]");
+      return edges.length > 0 ? edges : initialEdges;
+    }
+    return initialEdges;
+  });
+
   const [type, setType] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState({
     id: "",
@@ -107,6 +152,13 @@ export const BuilderProvider = ({
     messageContent: "",
   });
   const [messageContent, setMessageContent] = useState("");
+  const [focusTextarea, setFocusTextarea] = useState(false);
+  const [confirmationModal, setConfirmationModal] = useState({
+    show: false,
+    nodeId: null as string | null,
+    message: "",
+    type: "delete" as "delete" | "save",
+  });
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -129,10 +181,66 @@ export const BuilderProvider = ({
   );
 
   const handleDoubleClick = (id: string, messageContent: string) => {
+    if (isEditing.id === id && isEditing.isEditing) {
+      setFocusTextarea(true);
+      setTimeout(() => setFocusTextarea(false), 100);
+      return;
+    }
+
     setIsEditing({
       id: id,
       isEditing: isEditing.id === id ? !isEditing.isEditing : true,
       messageContent: messageContent,
+    });
+
+    if (isEditing.id !== id || !isEditing.isEditing) {
+      setFocusTextarea(true);
+      setTimeout(() => setFocusTextarea(false), 100);
+    }
+  };
+
+  const handleSaveNodeChanges = () => {
+    setConfirmationModal({
+      show: true,
+      nodeId: null,
+      message:
+        "Are you sure you want to save all your changes? This will update your chat flow configuration.",
+      type: "save",
+    });
+  };
+
+  const confirmSaveNodeChanges = () => {
+    // If the any node is not connected to any other node show validation error
+    const nodesNotConnected = nodes.filter((node) => {
+      return !edges.some(
+        (edge) => edge.source === node.id || edge.target === node.id
+      );
+    });
+
+    if (nodesNotConnected.length > 0) {
+      toast.error(
+        "Node must be connected to at least one other node: " +
+          nodesNotConnected.map((node) => node.id).join(", ")
+      );
+      setConfirmationModal({
+        show: false,
+        nodeId: null,
+        message: "",
+        type: "delete",
+      });
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nodes", JSON.stringify(nodes));
+      localStorage.setItem("edges", JSON.stringify(edges));
+    }
+    toast.success("Node changes saved");
+    setConfirmationModal({
+      show: false,
+      nodeId: null,
+      message: "",
+      type: "delete",
     });
   };
 
@@ -178,8 +286,6 @@ export const BuilderProvider = ({
       event.preventDefault();
       event.preventDefault();
 
-      // check if the dropped element is valid
-      console.log("onDrop", type);
       if (!type) {
         return;
       }
@@ -192,7 +298,7 @@ export const BuilderProvider = ({
         id: crypto.randomUUID(),
         type,
         position,
-        data: { label: `${type} node`, messageContent: "" },
+        data: { label: `${type} node`, messageContent: "Enter your message" },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -228,6 +334,27 @@ export const BuilderProvider = ({
     }
   };
 
+  const handleDeleteNode = (id: string) => {
+    // Find the node to get its message content for the confirmation message
+    const nodeToDelete = nodes.find((node) => node.id === id);
+    const messageContent = nodeToDelete?.data?.messageContent || "this message";
+
+    setConfirmationModal({
+      show: true,
+      nodeId: id,
+      message: `Are you sure you want to delete the message "${messageContent}"? This action cannot be undone.`,
+      type: "delete",
+    });
+  };
+
+  const confirmDeleteNode = (id: string) => {
+    setNodes((nodes) => nodes.filter((node) => node.id !== id));
+    setEdges((edges) =>
+      edges.filter((edge) => edge.source !== id && edge.target !== id)
+    );
+    toast.success("Node deleted successfully");
+  };
+
   return (
     <BuilderContext.Provider
       value={{
@@ -249,8 +376,17 @@ export const BuilderProvider = ({
         handleDoubleClick,
         handleBack,
         handleMessageContentChange,
+        handleSaveNodeChanges,
+        confirmSaveNodeChanges,
+        focusTextarea,
+        setFocusTextarea,
+        handleDeleteNode,
+        confirmDeleteNode,
+        confirmationModal,
+        setConfirmationModal,
       }}
     >
+      <ToastContainer position="top-center" />
       {children}
     </BuilderContext.Provider>
   );

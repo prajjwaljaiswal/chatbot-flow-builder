@@ -2,6 +2,7 @@
 import MessageNode from "@/components/MessageNode";
 import NodesPanel from "@/components/NodesPanel";
 import SettingPanel from "@/components/SettingPanel";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import { useBuilder } from "@/context/builderContext";
 import {
   Background,
@@ -50,6 +51,7 @@ export default function Builder() {
         </ReactFlow>
       </div>
       {isEditing.isEditing ? <SettingPanel /> : <NodesPanel />}
+      <ConfirmationModal />
     </>
   );
 }
