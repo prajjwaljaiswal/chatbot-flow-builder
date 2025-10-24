@@ -32,7 +32,7 @@ export default function Builder() {
 
   return (
     <>
-      <div style={{ width: "100vw", height: "100vh" }}>
+      <div className="w-full h-[calc(100vh-64px)]">
         <ReactFlow
           nodes={nodes}
           edges={edges}
